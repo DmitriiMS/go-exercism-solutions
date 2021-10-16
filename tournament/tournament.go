@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"sort"
 	"strings"
 	"unicode"
@@ -48,8 +49,8 @@ func Tally(input io.Reader, output io.Writer) error {
 // readStrings takes input, reads all from it and returns slice of strigs,
 // each one of them representing one match
 func readStrings(in io.Reader) ([]string, error) {
-	str, err := io.ReadAll(in) // read everything
-	if err != nil {            //if tehre was an error, return it
+	str, err := ioutil.ReadAll(in) // read everything
+	if err != nil {                //if tehre was an error, return it
 		return []string{}, err
 	}
 	strCut := (strings.Split(strings.Trim(string(str), " \n"), "\n")) // trim and cut input into a slice of strings
