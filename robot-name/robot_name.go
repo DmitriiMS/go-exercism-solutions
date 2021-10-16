@@ -20,7 +20,7 @@ var setNumbers = []string{}                        // same for numbers from 000 
 // together Prefix+Number -- full name
 
 // Prepare initializes sets for randomization
-func Prepare(pref *[]string, num *[]string) {
+func init() {
 	//generate all 676 letter combinations
 	for _, i := range letters {
 		for _, j := range letters {
@@ -33,15 +33,11 @@ func Prepare(pref *[]string, num *[]string) {
 		n := fmt.Sprintf("%03d", t)
 		setNumbers = append(setNumbers, n)
 	}
+	rand.Seed(time.Now().UnixNano())
 }
 
 // GenerateRandomName takes random prefix and random number and returns a name
 func GenerateRandomName() string {
-	//Initialize sets once if it's the first time we generate the name
-	if len(setPrefixes) < 1 {
-		Prepare(&setPrefixes, &setNumbers)
-	}
-	rand.Seed(time.Now().UnixNano()) // new seed every time
 	prefix := setPrefixes[rand.Intn(len(setPrefixes))]
 	number := setNumbers[rand.Intn(len(setNumbers))]
 	return prefix + number
