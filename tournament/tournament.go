@@ -1,3 +1,4 @@
+//TODO: refactor using suggestions from mentor.
 package tournament
 
 import (
