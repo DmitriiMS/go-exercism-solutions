@@ -9,7 +9,7 @@ import (
 
 //matrix consists of matrix body and two variables, representing its dimensions
 type Matrix struct {
-	body         [][]int
+	body         [][]int //TODO: rewrite in 1D format, this will simplify things
 	numberOfRows int
 	rowLength    int
 }
