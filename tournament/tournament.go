@@ -1,4 +1,7 @@
-//TODO: refactor using suggestions from mentor.
+//TODO1: reciever functions instead of passing types arraound
+//TODO2: refactor team into structure that holds team name and it's statistics,
+//		 this way there's no need for a complex rating type
+//TODO3: buffio.Scanner for reading lines
 package tournament
 
 import (
