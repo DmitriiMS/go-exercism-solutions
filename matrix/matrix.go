@@ -7,92 +7,82 @@ import (
 	"strings"
 )
 
-//matrix consists of matrix body and two variables, representing its dimensions
+//matrix consists of matrix body and length of its rows
 type Matrix struct {
-	body         [][]int //TODO: rewrite in 1D format, this will simplify things
-	numberOfRows int
-	rowLength    int
+	body      []int
+	rowLength int
 }
 
 //New() constructs a new Matrix object from given string representation
 func New(s string) (*Matrix, error) {
-	stringRows := strings.Split(s, "\n")                    //get individual strings that represent rows
-	splitRows, errValidation := validateStrings(stringRows) // validate strings and get the text representation of the matrix
-	if errValidation != nil {                               //if something went wrong during the validation, return error
+	stringRows := strings.Split(s, "\n")                               //get individual strings that represent rows
+	tempBody, rowLength, errValidation := validateAndBuild(stringRows) // validate strings and construct the body of a matrix
+	if errValidation != nil {                                          //if something went wrong during the validation, return error
 		return nil, errValidation
 	}
-	numberOfRows, rowLength := len(splitRows), len(splitRows[0]) // get matrix dimensions
-	tempMatrix := make([][]int, numberOfRows)                    //temp int matrix
-	//walk over the text matrix and convert each element to int
-	//if element can't be converted to int, return error
-	for i := 0; i < numberOfRows; i++ {
-		tempMatrix[i] = make([]int, rowLength)
-		for j := 0; j < rowLength; j++ {
-			number, errConversion := strconv.Atoi(splitRows[i][j]) //if element can't be converted to int, return error
-			if errConversion != nil {
-				return nil, errConversion
-			}
-			tempMatrix[i][j] = number
-		}
-	}
-	return &Matrix{tempMatrix, numberOfRows, rowLength}, nil // construct and return matrix
+	return &Matrix{tempBody, rowLength}, nil // construct and return matrix
 }
 
-//Rows() constructs a copy of matrix body, which is stored in rows-columns format, and returns it.
+//Rows() constructs a rows-first representation of a matrix. It should be just like in the original input.
 func (m *Matrix) Rows() [][]int {
-	temp := make([][]int, m.numberOfRows)
-	for i := 0; i < m.numberOfRows; i++ {
-		temp[i] = make([]int, m.rowLength)
-		for j := 0; j < m.rowLength; j++ {
-			temp[i][j] = m.body[i][j]
+	temp := make([][]int, 0)
+	for start, end := 0, m.rowLength; end <= len(m.body); start, end = start+m.rowLength, end+m.rowLength {
+		temp = append(temp, m.body[start:end])
+	}
+	//create a copy, so our representation won't be referencing matrix structure directly
+	cpy := make([][]int, len(m.body)/m.rowLength)
+	for i := range cpy {
+		cpy[i] = make([]int, m.rowLength)
+		copy(cpy[i], temp[i])
+	}
+	return cpy
+}
+
+//Cols() constructs a columns-first representation of a matrix. It should look like original input, but transposed.
+func (m *Matrix) Cols() [][]int {
+	temp := make([][]int, 0)
+	for i := 0; i < m.rowLength; i++ {
+		col := make([]int, 0)
+		for j := i; j < len(m.body); j += m.rowLength {
+			col = append(col, m.body[j])
 		}
+		temp = append(temp, col)
 	}
 	return temp
-}
-
-//Cols() returns the body of the transposed matrix, this way we get columns of the original matrix.
-func (m *Matrix) Cols() [][]int {
-	return m.constructTransposed().body
 }
 
 //Set() sets a new value of a given element in the matrix.
 func (m *Matrix) Set(row, column, value int) bool {
 	//check if given indexes are not out of bounds for the given matrix
-	if (row < 0 || row > m.numberOfRows-1) ||
-		(column < 0 || column > m.rowLength-1) {
+	if (row < 0 || row >= len(m.body)/m.rowLength) ||
+		(column < 0 || column >= m.rowLength) {
 		return false
 	}
-	m.body[row][column] = value // if everything is ok, set a new value.
+	m.body[row*m.rowLength+column] = value // if everything is ok, set a new value.
 	return true
 }
 
-//constructTransposed() transposes matrix, creating a new one where rows are columns and columns are rows
-func (m *Matrix) constructTransposed() *Matrix {
-	tempMatrix := make([][]int, m.rowLength)
-	for i := 0; i < m.rowLength; i++ {
-		tempMatrix[i] = make([]int, m.numberOfRows)
-		for j := 0; j < m.numberOfRows; j++ {
-			tempMatrix[i][j] = m.body[j][i]
-		}
-	}
-	return &Matrix{tempMatrix, m.rowLength, m.numberOfRows}
-}
-
-//ValidateStrings() validates strings that represent matrix rows, splits them into elements and returns
-//the text representation of the matrix.
-func validateStrings(Rows []string) ([][]string, error) {
-	splitRows := [][]string{}
+//ValidateStrings() validates strings that represent matrix rows, splits them into elements, converts elements to int
+//and returns the body of a matrix represented by a 1D slice.
+func validateAndBuild(Rows []string) ([]int, int, error) {
+	longForm := []int{}
 	//trim the first string and split it into elements, get the lentgh of the resulting slice
 	//this is the length against which lengths of other strings will be compared
 	prevLen := len(strings.Split(strings.TrimSpace(Rows[0]), " "))
-	for i, _ := range Rows {
+	for i := range Rows {
 		//trim each string, split it into elements and compare length of the resulting slice with the first measurement
 		splitRow := strings.Split(strings.TrimSpace(Rows[i]), " ")
 		currLen := len(splitRow)
 		if currLen != prevLen { // if this row is of different length than the first one, return error
-			return nil, errors.New("rows are of uneven length")
+			return nil, 0, errors.New("rows are of uneven length")
 		}
-		splitRows = append(splitRows, splitRow) // add sliced text matrix row to the text matrix
+		for _, number := range splitRow { //walk over a slie of elements, convert them to int and add each of them to the matrix slice
+			numberInt, errConversion := strconv.Atoi(number) //if element can't be converted to int, return error
+			if errConversion != nil {
+				return nil, 0, errConversion
+			}
+			longForm = append(longForm, numberInt)
+		}
 	}
-	return splitRows, nil
+	return longForm, prevLen, nil
 }
