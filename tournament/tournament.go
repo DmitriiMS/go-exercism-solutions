@@ -11,17 +11,7 @@ import (
 	"unicode"
 )
 
-// Structure to hold information about the match
-type match struct {
-	first  string
-	second string
-	result string
-}
-
-// Tournament hold information about all mathces
-type tournament []match
-
-// Final rating table -- slice of statistics
+// statistics for a team
 type statistics struct {
 	teamName      string
 	points        int
@@ -31,6 +21,7 @@ type statistics struct {
 	losses        int
 }
 
+// rating that holds all statistics for all teams
 type rating map[string]*statistics
 
 func Tally(input io.Reader, output io.Writer) error {
@@ -38,14 +29,9 @@ func Tally(input io.Reader, output io.Writer) error {
 	if err != nil {                // check for errors, if there is one, return it
 		return err
 	}
-	tournament := new(tournament)
-	err = tournament.processTournament(src) // process source and get tournament information
-	if err != nil {                         // check for errors
-		return err
-	}
 	rating := make(rating)
-	err = rating.rateTournament(*tournament) // process the tournament and calculate statistics
-	if err != nil {                          // check for errors
+	err = rating.processTournament(src) // process source and calculate statistics
+	if err != nil {                     // check for errors
 		return err
 	}
 	err = rating.outputResults(output) // Output results to buffer
@@ -55,7 +41,7 @@ func Tally(input io.Reader, output io.Writer) error {
 	return nil
 }
 
-// readStrings takes input, reads all from it and returns slice of strigs,
+// readStrings takes input, reads all strings from it and returns slice of strigs,
 // each one of them representing one match
 func readStrings(in io.Reader) ([]string, error) {
 	lineScanner := bufio.NewScanner(in)
@@ -69,11 +55,9 @@ func readStrings(in io.Reader) ([]string, error) {
 	return strCut, nil
 }
 
-// processTournamen take the string slice of games played, checks if everything in every
-// string is valid and constructs a slice of matches for further processing.
-// Returns an error if abything is wrong
-func (t *tournament) processTournament(src []string) error {
-
+// processTournamen take the string slice of games played, strips comments and new lines,
+// then it calls a function that validates team names and if everything is correct, calls a function that calculate statistics for teams
+func (r *rating) processTournament(src []string) error {
 	for _, m := range src {
 		if strings.HasPrefix(m, "#") || len(m) == 0 { // ignore comments and newlines
 			continue
@@ -83,11 +67,10 @@ func (t *tournament) processTournament(src []string) error {
 		if err1 != nil || err2 != nil {
 			return errors.New("invalid team name") // create a new error, because I don't want to check which one of the errors is not nil
 		}
-		if splitMatch[2] != "win" && splitMatch[2] != "loss" && splitMatch[2] != "draw" { // check if result of the game is valid
-			return errors.New("invalid match result: should be win, loss or a draw")
+		err := r.calculateStats(splitMatch[0], splitMatch[1], splitMatch[2]) // calculate statistics for this game and add them to the rating
+		if err != nil {
+			return err
 		}
-		// Create a match and append it to the tournament
-		*t = append(*t, match{first: splitMatch[0], second: splitMatch[1], result: splitMatch[2]})
 	}
 	return nil
 }
@@ -109,50 +92,45 @@ func isTeamNameValid(teamName string) error {
 	return nil
 }
 
-// rateTournament calculates rating of every team in the tournament.
-// Various statistics are represented by map:
-// data is saved in this way:
-// MP            |W   |D    |L     |P
-// matches played|wins|draws|losses|points
-func (r *rating) rateTournament(t tournament) error {
-	for _, match := range t {
-		if _, ok := (*r)[match.first]; !ok {
-			(*r)[match.first] = &statistics{teamName: match.first}
-		}
-		if _, ok := (*r)[match.second]; !ok {
-			(*r)[match.second] = &statistics{teamName: match.second}
-		}
-		switch match.result {
-		case "win":
-			//statistics for the first team
-			(*r)[match.first].matchesPlayed += 1
-			(*r)[match.first].wins += 1
-			(*r)[match.first].points += 3
-			//statistics for the second team
-			(*r)[match.second].matchesPlayed += 1
-			(*r)[match.second].losses += 1
-		case "draw":
-			//statistics for the first team
-			(*r)[match.first].matchesPlayed += 1
-			(*r)[match.first].draws += 1
-			(*r)[match.first].points += 1
-			//statistics for the second team
-			(*r)[match.second].matchesPlayed += 1
-			(*r)[match.second].draws += 1
-			(*r)[match.second].points += 1
-		case "loss":
-			//statistics for the first team
-			(*r)[match.first].matchesPlayed += 1
-			(*r)[match.first].losses += 1
-			//statistics for the second team
-			(*r)[match.second].matchesPlayed += 1
-			(*r)[match.second].wins += 1
-			(*r)[match.second].points += 3
-		default:
-			return errors.New("unknown error while processing tournament")
-		}
-
+// calculateStats calculates statistics for any given match and adds them to those that were already calculated
+// this way it creates statistics for the whole tournament
+func (r *rating) calculateStats(firstTeam, secondTeam, result string) error {
+	if _, ok := (*r)[firstTeam]; !ok {
+		(*r)[firstTeam] = &statistics{teamName: firstTeam}
 	}
+	if _, ok := (*r)[secondTeam]; !ok {
+		(*r)[secondTeam] = &statistics{teamName: secondTeam}
+	}
+	switch result {
+	case "win":
+		//statistics for the first team
+		(*r)[firstTeam].matchesPlayed += 1
+		(*r)[firstTeam].wins += 1
+		(*r)[firstTeam].points += 3
+		//statistics for the second team
+		(*r)[secondTeam].matchesPlayed += 1
+		(*r)[secondTeam].losses += 1
+	case "draw":
+		//statistics for the first team
+		(*r)[firstTeam].matchesPlayed += 1
+		(*r)[firstTeam].draws += 1
+		(*r)[firstTeam].points += 1
+		//statistics for the second team
+		(*r)[secondTeam].matchesPlayed += 1
+		(*r)[secondTeam].draws += 1
+		(*r)[secondTeam].points += 1
+	case "loss":
+		//statistics for the first team
+		(*r)[firstTeam].matchesPlayed += 1
+		(*r)[firstTeam].losses += 1
+		//statistics for the second team
+		(*r)[secondTeam].matchesPlayed += 1
+		(*r)[secondTeam].wins += 1
+		(*r)[secondTeam].points += 3
+	default:
+		return errors.New("invalid match result: should be win, loss or a draw")
+	}
+
 	return nil
 }
 
