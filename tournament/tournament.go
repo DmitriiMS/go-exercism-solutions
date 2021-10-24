@@ -1,4 +1,4 @@
-//package tournament calculates teams statistics for football tournament
+//package tournament calculates teams statistics for a football tournament
 package tournament
 
 import (
@@ -92,8 +92,8 @@ func isTeamNameValid(teamName string) error {
 	return nil
 }
 
-// calculateStats calculates statistics for any given match and adds them to those that were already calculated
-// this way it creates statistics for the whole tournament
+// calculateStats checks whether or not statistic for a team was initialised, if not, initialises it,
+// checks that match resutl is correct and calls function that does actual score calculations for each team in a match.
 func (r *rating) calculateStats(firstTeam, secondTeam, result string) error {
 	if _, ok := (*r)[firstTeam]; !ok {
 		(*r)[firstTeam] = &statistics{teamName: firstTeam}
@@ -101,44 +101,32 @@ func (r *rating) calculateStats(firstTeam, secondTeam, result string) error {
 	if _, ok := (*r)[secondTeam]; !ok {
 		(*r)[secondTeam] = &statistics{teamName: secondTeam}
 	}
-	switch result {
-	case "win":
-		//statistics for the first team
-		(*r)[firstTeam].matchesPlayed += 1
-		(*r)[firstTeam].wins += 1
-		(*r)[firstTeam].points += 3
-		//statistics for the second team
-		(*r)[secondTeam].matchesPlayed += 1
-		(*r)[secondTeam].losses += 1
-	case "draw":
-		//statistics for the first team
-		(*r)[firstTeam].matchesPlayed += 1
-		(*r)[firstTeam].draws += 1
-		(*r)[firstTeam].points += 1
-		//statistics for the second team
-		(*r)[secondTeam].matchesPlayed += 1
-		(*r)[secondTeam].draws += 1
-		(*r)[secondTeam].points += 1
-	case "loss":
-		//statistics for the first team
-		(*r)[firstTeam].matchesPlayed += 1
-		(*r)[firstTeam].losses += 1
-		//statistics for the second team
-		(*r)[secondTeam].matchesPlayed += 1
-		(*r)[secondTeam].wins += 1
-		(*r)[secondTeam].points += 3
-	default:
+	if result != "win" && result != "loss" && result != "draw" {
 		return errors.New("invalid match result: should be win, loss or a draw")
 	}
-
+	(*r)[firstTeam].addPoints("+" + result)
+	(*r)[secondTeam].addPoints("-" + result)
 	return nil
+}
+
+//addPoints adds points to team statistics
+func (t *statistics) addPoints(result string) {
+	if result == "+win" || result == "-loss" {
+		t.wins += 1
+	} else if result == "-win" || result == "+loss" {
+		t.losses += 1
+	} else {
+		t.draws += 1
+	}
+	t.matchesPlayed += 1
+	t.points = t.wins*3 + t.draws
 }
 
 // outputResults prints sorted results to io.Writer
 func (r *rating) outputResults(out io.Writer) error {
 	rs := make([]statistics, 0)
 	for _, value := range *r {
-		rs = append(rs, *value)
+		rs = append(rs, *value) //for sorting we need a slice of statistics
 	}
 	// Reverse sort by points, if points are equal, sort by first letter of the team ascending.
 	sort.Slice(rs, func(i int, j int) bool {
