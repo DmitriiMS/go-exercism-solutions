@@ -4,11 +4,7 @@ type Ints []int
 type Lists [][]int
 type Strings []string
 
-func (ints *Ints) Keep(f func(int) bool) Ints {
-	if *ints == nil {
-		return nil
-	}
-	newInts := []int{}
+func (ints *Ints) Keep(f func(int) bool) (newInts Ints) { //named returns are nil until modified, so this varian skips nil checks
 	for _, i := range *ints {
 		if f(i) {
 			newInts = append(newInts, i)
@@ -17,17 +13,8 @@ func (ints *Ints) Keep(f func(int) bool) Ints {
 	return newInts
 }
 
-func (ints *Ints) Discard(f func(int) bool) Ints {
-	if *ints == nil {
-		return nil
-	}
-	newInts := []int{}
-	for _, i := range *ints {
-		if !f(i) {
-			newInts = append(newInts, i)
-		}
-	}
-	return newInts
+func (ints *Ints) Discard(f func(int) bool) (newInts Ints) {
+	return ints.Keep(func(i int) bool { return !f(i) }) //use reverse fucntion in a wrapper function
 }
 
 func (lists *Lists) Keep(f func([]int) bool) Lists {
