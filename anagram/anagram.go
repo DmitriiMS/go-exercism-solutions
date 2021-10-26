@@ -1,44 +1,36 @@
 //package anagram provides function to detect anagrams
 package anagram
 
+//following is not my original solution, it's an idea of "scoring" words in a way by using arrays
 import (
-	"sort"
+	//"sort"
 	"strings"
 )
 
 //Detect detects anagrams
 func Detect(word string, candidates []string) (result []string) {
-	upWord := strings.ToUpper(word)               //uppercase the target word because anagram search should be case insensitive
-	candidates = checkStrings(upWord, candidates) //candidate validation
-	if len(candidates) == 0 {                     //if slice is empty after the validation, return empty slice
-		return result
-	}
-	sortedWord := SortString(upWord) //sort the target word by characters
-	//uppercase each candidate, sort it by letters and if it equals to the target word, add it to the resulting slice
+	upWord := strings.ToUpper(word) //uppercase the target word
+	wordScore := Score(upWord)      //calculate score for target word
 	for _, candidate := range candidates {
-		if SortString(strings.ToUpper(candidate)) != sortedWord {
+		upCandidate := strings.ToUpper(candidate) //uppercase each candidate
+		if upCandidate == upWord || wordScore != Score(upCandidate) {
+			//if word and candidate are equal, or if their score are not equal, go to the next candidate
 			continue
 		}
-		result = append(result, candidate)
+		result = append(result, candidate) //append anagram to resulting slice
 	}
-	return result
+	return
 }
 
-//checkStrings checks if candidates are same as the target word
-func checkStrings(word string, candidates []string) []string {
-	//compare each uppercased candidate to target starting from the end of the slice
-	//if the match, trim slice
-	for i := len(candidates) - 1; i >= 0; i-- {
-		if strings.ToUpper(candidates[i]) == word {
-			candidates = candidates[:len(candidates)-1]
+//Score generates an array of 26 elements, one for each letter,
+//which serves as a mask for a give word, keeping the information about
+//how many times each letter was used in this word.
+//Those masks can be used as scores for words, anagrams should have same masks-scores
+func Score(word string) (score [26]int) {
+	for _, r := range word {
+		if r-65 >= 0 { //check that we only iterate over letters, no spaces allowed
+			score[r-65]++
 		}
 	}
-	return candidates
-}
-
-//SortString sorts string by letters
-func SortString(s string) string {
-	letters := strings.Split(s, "")
-	sort.Strings(letters)
-	return strings.Join(letters, "")
+	return
 }
