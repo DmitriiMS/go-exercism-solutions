@@ -3,7 +3,6 @@ package anagram
 
 //following is not my original solution, it's an idea of "scoring" words in a way by using arrays
 import (
-	//"sort"
 	"strings"
 )
 
