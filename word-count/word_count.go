@@ -2,38 +2,24 @@ package wordcount
 
 import (
 	"strings"
-
 	"unicode"
 )
 
 type Frequency map[string]int
 
-func WordCount(phrase string) Frequency {
-
-	frequency := make(Frequency)
-
-	words := strings.FieldsFunc(phrase, func(r rune) bool {
-
-		return !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'')
-
-	})
-
+func WordCount(input string) Frequency {
+	freq := make(Frequency)
+	splitter := func(c rune) bool {
+		return !unicode.IsLetter(c) && !unicode.IsNumber(c) && (c) != '\''
+	}
+	words := strings.FieldsFunc(input, splitter)
 	for _, word := range words {
-
-		word = strings.Trim(strings.ToLower(word), "'")
-
-		if _, ok := frequency[word]; !ok {
-
-			frequency[word] = 1
-
-		} else {
-
-			frequency[word]++
-
+		if len(word) > 0 {
+			freq[strings.ToLower(strings.Trim(string(word), "'"))] += 1
 		}
 
 	}
 
-	return frequency
+	return freq
 
 }
