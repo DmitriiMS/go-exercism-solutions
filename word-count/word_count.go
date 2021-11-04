@@ -1,21 +1,39 @@
 package wordcount
 
 import (
-	"regexp"
 	"strings"
+
+	"unicode"
 )
 
 type Frequency map[string]int
 
-func WordCount(input string) Frequency {
-	freq := make(Frequency)
-	punctuation := regexp.MustCompile(`[!?.,_\-:;&@$%^&\n\t]`)
-	depunctuated := punctuation.ReplaceAll([]byte(input), []byte(" "))
-	sliced := strings.Split(string(depunctuated), " ")
-	for _, word := range sliced {
-		if len(word) > 0 {
-			freq[strings.ToLower(strings.Trim(word, "'"))] += 1
+func WordCount(phrase string) Frequency {
+
+	frequency := make(Frequency)
+
+	words := strings.FieldsFunc(phrase, func(r rune) bool {
+
+		return !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '\'')
+
+	})
+
+	for _, word := range words {
+
+		word = strings.Trim(strings.ToLower(word), "'")
+
+		if _, ok := frequency[word]; !ok {
+
+			frequency[word] = 1
+
+		} else {
+
+			frequency[word]++
+
 		}
+
 	}
-	return freq
+
+	return frequency
+
 }
