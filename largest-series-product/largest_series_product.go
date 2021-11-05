@@ -13,23 +13,28 @@ func LargestSeriesProduct(digits string, span int) (int64, error) {
 	} else if span == 0 {
 		return 1, nil
 	}
-	var maxProduct int64 = 0
-OUTER:
-	for idx := 0; idx <= len(digits)-span; idx++ {
+	var product, maxProduct int64 = 1, 0
+	subLen := 0
+	for idx := 0; idx < len(digits); idx++ {
 		if digits[idx] == '0' {
+			product, subLen = 1, 0
 			continue
 		}
-		var product int64 = int64(digits[idx] - '0')
-		for i := 1; i < span; i++ {
-			if digits[idx+i] < '0' || digits[idx+i] > '9' {
-				return 0, errors.New("digits input must only contain digits")
-			} else if digits[idx+i] == '0' {
-				continue OUTER
-			}
-			product *= int64(digits[idx+i] - '0')
+		if digits[idx] < '0' || digits[idx] > '9' {
+			return 0, errors.New("digits input must only contain digits")
 		}
-		if product > maxProduct {
-			maxProduct = product
+		if subLen < span {
+			product *= int64(digits[idx] - '0')
+			subLen++
+		}
+		if subLen == span {
+			if product > maxProduct {
+				maxProduct = product
+			}
+			//divide by the leftmost number in series
+			//after that we need to mutiply by the new number on the right to get the new product
+			product /= int64(digits[idx-span+1] - '0')
+			subLen--
 		}
 	}
 	return maxProduct, nil
